@@ -1,0 +1,176 @@
+---
+title: "writing_function"
+author: "David"
+date: "2024-10-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(rvest)
+
+```
+
+
+```{r}
+set.seed(1)
+x_vec = rnorm(n = 25, mean = 10, sd = 3.5)
+
+```
+
+```{r}
+z_scores = function(x) {
+  
+  if (!is.numeric(x)) {
+    stop("x need to be numeric")
+  }
+  
+  else if (length(x) < 5) {
+    stop("you need at least 5 numbers to compute z score")
+  }
+  
+  else {
+    z = (x - mean(x)) / sd(x)
+    return(z)
+  }
+  
+}
+
+z_scores(x = x_vec)
+```
+
+function check 
+```{r}
+z_scores(x = 3)
+z_scores(x = c("e", "h", "i"))
+```
+
+
+```{r}
+mean_and_sd = function(x) {
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  out_df =
+    tibble(
+      mean = mean_x,
+      sd = sd_x
+    )
+  
+  return(out_df)
+}
+
+mean_and_sd(x_vec)
+
+```
+
+
+## check stuff using a simulation
+
+```{r}
+sim_df = 
+  tibble(
+    x = rnorm(30, 10, 5)
+  )
+
+sim_df |>
+  summarise(
+    mean = mean(x),
+    sd = sd(x)
+  )
+
+
+sim_mean_sd = function(sample_size, true_mean, true_sd) {
+  
+  sim_df = 
+  tibble(
+    x = rnorm(sample_size, true_mean, true_sd)
+  )
+  
+  out_df =
+    sim_df |>
+      summarise(
+        mean = mean(x),
+        sd = sd(x)
+      )
+  
+  return(out_df)
+  
+}
+
+sim_mean_sd(sample_size = 30, true_mean = 4, true_sd = 12)
+sim_mean_sd(sample_size = 100, true_mean = 4, true_sd = 12)
+sim_mean_sd(sample_size = 200, true_mean = 4, true_sd = 12)
+```
+
+
+LoTR
+
+```{r}
+fellowship_df = readxl::read_excel("./LotR_Words.xlsx", range = "B3:D6") |>
+  mutate(movie = "fellowship_ring") |>
+  janitor::clean_names()
+
+two_towers_df = readxl::read_excel("./LotR_Words.xlsx", range = "F3:H6") |>
+  mutate(movie = "two_towers") |>
+  janitor::clean_names()
+
+return_king_df = readxl::read_excel("./LotR_Words.xlsx", range = "J3:L6") |>
+  mutate(movie = "return_king") |>
+  janitor::clean_names()
+
+
+
+extract_clean = function(movie_name, path, range) {
+  
+  df =
+    readxl::read_excel(path, range = range) |>
+    mutate(movie = movie_name) |>
+    janitor::clean_names()
+  
+  return(df)
+}
+
+lotr_df =
+  bind_rows(
+    fellowship = extract_clean(movie_name = "fellowship_ring", path = "./LotR_Words.xlsx", range = "B3:D6")
+  )
+```
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+marj_table =
+  nsduh_html |>
+  html_table() |>
+  nth(4) |>
+  slice(-1) |>
+  mutate(drug = "marj")
+
+cocaine_table =
+  nsduh_html |>
+  html_table() |>
+  nth(5) |>
+  slice(-1) |>
+  mutate(drug = "cocaine")
+
+heroin_table =
+  nsduh_html |>
+  html_table() |>
+  nth(5) |>
+  slice(-1) |>
+  mutate(drug = "heroin")
+
+
+source("read_drug.R")
+
+marj_new = read_drug(4, "marj")
+
+```
+
+
+
+
