@@ -1,0 +1,171 @@
+---
+title: "iteration_listcols"
+author: "David"
+date: "2024-10-29"
+output: html_document
+---
+
+```{r setup, echo = FALSE, message = FALSE}
+library(tidyverse)
+library(rvest)
+```
+
+```{r}
+l = list(
+  vec_numeric = 1:4,
+  unif_sample = runif(100),
+  mat = matrix(1:8, 2, 4),
+  summary = summary(rnorm(1000))
+)
+
+l[[4]]
+
+l[["mat"]][1,3]
+
+
+list_norm = 
+  list(
+    a = rnorm(20, 3, 1),
+    b = rnorm(20, 0, 5),
+    c = rnorm(20, 10, .2),
+    d = rnorm(20, -3, 1)
+  )
+
+list_norms[["b"]]
+```
+
+```{r}
+mean_and_sd = function(x) {
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  out_df =
+    tibble(
+      mean = mean_x,
+      sd = sd_x
+    )
+  
+  return(out_df)
+}
+
+```
+
+```{r}
+mean_and_sd(list_norm[["a"]])
+mean_and_sd(list_norm[["b"]])
+mean_and_sd(list_norm[["c"]])
+mean_and_sd(list_norm[["d"]])
+
+output = vector("list", length = 4)
+
+
+for(i in 1:4) {
+  
+  output[[i]] = mean_and_sd(list_norm[[i]])
+}
+
+
+output = map(list_norm, mean_and_sd)
+
+```
+
+```{r}
+listcol_df =
+  tibble(
+    name = c("a", "b", "c", "d"),
+    samp = list_norm
+  )
+  
+
+listcol_df
+
+listcol_df |>
+  filter(name %in% c("a", "b"))
+```
+
+```{r}
+listcol_df[["samp"]][["a"]]
+
+map(listcol_df[["samp"]], mean_and_sd)
+```
+
+```{r}
+listcol_df |>
+  mutate(
+    output = map(samp, mean_and_sd),
+    iqr = map_dbl(samp, IQR)) |>
+  select(-samp) |>
+  unnest(output)
+```
+
+```{r}
+nsduh_table_format = function(html, table_num) {
+  
+  out_table = 
+    html |> 
+    html_table() |> 
+    nth(table_num) |>
+    slice(-1) |> 
+    select(-contains("P Value"))
+  
+  return(out_table)
+}
+
+```
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+
+
+nsduh_df = 
+  tibble(
+    drug = c("marj", "cocaine", "herion"),
+    table_n = c(1, 4, 5)
+  ) |>
+  mutate(table = map(table_n, nsduh_table_format, html = nsduh_html)) |>
+  unnest(table)
+
+nsduh_df |>
+  filter(State == "New York")
+
+```
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USW00022534 = "Molokai_HI",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+```{r}
+weather_nest =
+  weather_df |>
+  nest(data = date:tmin)
+
+weather_nest[["data"]][1]
+
+lm(tmax ~ tmin, data = weather_nest[["data"]][[1]])
+lm(tmax - tmin, data = weather_nest[["data"]][1])
+lm(tmax - tmin, data = weather_nest[["data"]][1])
+
+weather_nest |>
+  mutate(model_fit = map(data, \(x) lm(tmax ~ tmin, data = x))) |>
+  pull(model_fit)
+```
+
+
