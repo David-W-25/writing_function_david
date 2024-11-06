@@ -170,7 +170,13 @@ sim_res =
     n = 2:50,
     iter = 1:10000
   ) |>
-  
+  mutate(res = map_lgl(n, bdays_sim)) |>
+  group_by(n) |>
+  summarise(prob = mean(res))
+
+sim_res |>
+  ggplot(aes(x = n, y = prob)) +
+  geom_line()
 
 ```
 
