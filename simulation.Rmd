@@ -1,0 +1,178 @@
+---
+title: "simulation"
+author: "David"
+date: "2024-10-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(rvest)
+set.seed(1031)
+```
+
+## simulation
+
+```{r}
+sim_df = 
+  tibble(
+    x = rnorm(30, 10, 5)
+  )
+
+sim_df |>
+  summarise(
+    mean = mean(x),
+    sd = sd(x)
+  )
+
+
+sim_mean_sd = function(sample_size, true_mean = 10, true_sd = 5) {
+  
+  sim_df = 
+  tibble(
+    x = rnorm(sample_size, true_mean, true_sd)
+  )
+  
+  out_df =
+    sim_df |>
+      summarise(
+        mean = mean(x),
+        sd = sd(x)
+      )
+  
+  return(out_df)
+  
+}
+
+
+```
+
+
+```{r}
+sim_mean_sd(30)
+
+output = vector("list", 1000)
+
+for(i in 1:1000) {
+  
+  output[[i]] = sim_mean_sd(30)
+}
+bind_rows(output) |>
+  summarise(
+    ave_mean = mean(mean),
+    sd_mean = sd(mean)
+  )
+
+```
+
+```{r}
+sim_res =
+  tibble(
+    iter = 1:1000
+  ) |>
+  mutate(samp_res = map(iter, sim_mean_sd, sample_size = 30)) |>
+  unnest(samp_res)
+
+```
+
+
+```{r}
+sim_res =
+  expand_grid(
+    n = c(10, 50, 100, 500, 2000),
+    iter = 1:1000
+  ) |>
+  mutate(samp_res = map(n, sim_mean_sd)) |>
+  unnest(samp_res)
+```
+
+```{r}
+sim_res |>
+  group_by(n) |>
+  summarise(
+    se = sd(mean)
+  )
+
+sim_res |>
+  mutate(n = str_c("n =", n),
+         n = fct_inorder(n),
+         ) |>
+  ggplot(aes(x = n, y = mean)) +
+  geom_violin()
+```
+
+```{r}
+sim_data =
+  tibble(
+    x = rnorm(30, mean = 1, sd = 1),
+    y = 2 + 3 * x + rnorm(30, 0, 1)
+  )
+
+lm_fit = lm(y ~ x, data = sim_data)
+
+
+```
+
+```{r}
+sim_regression = function(n) {
+  
+  sim_data =
+  tibble(
+    x = rnorm(n, mean = 1, sd = 1),
+    y = 2 + 3 * x + rnorm(n, 0, 1)
+  )
+
+  lm_fit = lm(y ~ x, data = sim_data)
+
+  out_df =
+    tibble(
+      beta0_hat = coef(lm_fit)[1], 
+      beta1_hat = coef(lm_fit)[2]
+   )
+
+  return(out_df)
+
+}
+```
+
+```{r}
+sim_res =
+  expand_grid(
+    sample_size = 30,
+    iter = 1:1000
+  ) |>
+  mutate(lm_res = map(sample_size, sim_regression)) |>
+  unnest(lm_res)
+
+sim_res |>
+  ggplot(aes(x = beta1_hat)) +
+  geom_histogram()
+
+```
+
+birthday problem
+
+```{r}
+bdays_sim = function(n) {
+
+  bdays = sample(1:365, size = n, replace = TRUE)
+
+  duplicate = length(unique(bdays)) < n
+  
+  return(duplicate)
+
+}
+
+bdays_sim(10)
+
+sim_res =
+  expand_grid(
+    n = 2:50,
+    iter = 1:10000
+  ) |>
+  
+
+```
+
+
+
